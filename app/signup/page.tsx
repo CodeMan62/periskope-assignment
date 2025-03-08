@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 
@@ -39,13 +38,6 @@ export default function SignUp() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Image
-            src="/logo.png" // Add your logo
-            alt="Logo"
-            width={64}
-            height={64}
-            className="mx-auto mb-4"
-          />
           <h1 className="text-2xl font-bold mb-2">Create your account</h1>
         </div>
 

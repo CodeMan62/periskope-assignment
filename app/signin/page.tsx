@@ -11,12 +11,22 @@ export default function SignIn() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastAttempt, setLastAttempt] = useState<number>(0)
   const router = useRouter()
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Check if enough time has passed since last attempt (30 seconds)
+    const now = Date.now()
+    if (now - lastAttempt < 30000) {
+      setError('Please wait a moment before trying again')
+      return
+    }
+
     setLoading(true)
     setError(null)
+    setLastAttempt(now)
 
     try {
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
@@ -25,7 +35,11 @@ export default function SignIn() {
       })
 
       if (signInError) {
-        setError(signInError.message)
+        if (signInError.message.includes('rate limit')) {
+          setError('Too many login attempts. Please wait a few minutes and try again.')
+        } else {
+          setError(signInError.message)
+        }
       } else if (data?.session) {
         router.push('/dashboard/messages')
       }
@@ -37,17 +51,20 @@ export default function SignIn() {
     }
   }
 
+  // Update the button to show countdown when needed
+  const getButtonText = () => {
+    if (loading) return 'Signing in...'
+    if (Date.now() - lastAttempt < 30000) {
+      const secondsLeft = Math.ceil((30000 - (Date.now() - lastAttempt)) / 1000)
+      return `Try again in ${secondsLeft}s`
+    }
+    return 'Continue with Email'
+  }
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Image
-            src="/logo.png" // Add your logo
-            alt="Logo"
-            width={64}
-            height={64}
-            className="mx-auto mb-4"
-          />
           <h1 className="text-2xl font-bold mb-2">Log in to Periskope</h1>
         </div>
 
@@ -73,14 +90,16 @@ export default function SignIn() {
             />
           </div>
           {error && (
-            <div className="text-red-500 text-sm">{error}</div>
+            <div className="text-red-500 text-sm p-3 bg-red-50 rounded-lg">
+              {error}
+            </div>
           )}
           <button
             type="submit"
-            className="w-full bg-green-600 text-white p-3 rounded-lg font-medium"
-            disabled={loading}
+            className="w-full bg-green-600 text-white p-3 rounded-lg font-medium disabled:bg-green-400"
+            disabled={loading || Date.now() - lastAttempt < 30000}
           >
-            {loading ? 'Signing in...' : 'Continue with Email'}
+            {getButtonText()}
           </button>
         </form>
 
